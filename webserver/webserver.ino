@@ -18,8 +18,9 @@ MD_Parola P = MD_Parola(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
 const char* ssid = "Flavia";
 const char* password = "flaviawifi";
 // --- ESP8266 MAC ADDRESSES ---
-//uint8_t macESP1[] = {0x68, 0xc6, 0x3a, 0xd7, 0x71, 0x96}; // Alessandro
+uint8_t macESP1[] = {0x68, 0xc6, 0x3a, 0xd7, 0x71, 0x96}; // Alessandro
 uint8_t macESP2[] = {0x68, 0xc6, 0x3a, 0xd5, 0x33, 0xdb}; // Antonio
+uint8_t* macESP = NULL;
 
 ESP8266WebServer server(80);
 
@@ -37,7 +38,7 @@ void utf8ToAscii(char* s) {
   int k = 0;
   for (int i = 0; s[i] != '\0'; i++) {
     unsigned char c = (unsigned char)s[i];
-    if (c == 0xC3) { // Prefisso per caratteri accentati in UTF-8
+    if (c == 0xC3) {
       i++;
       switch ((unsigned char)s[i]) {
         case 0xA0: s[k++] = 0xE0; break; // à
@@ -58,9 +59,9 @@ void utf8ToAscii(char* s) {
 // HTML page
 void handleRoot() {
   String html = "<html><body>"
-                "<h2>ESP-NOW Sender</h2>"
+                "<h2>P.I.G. sender</h2>"
                 "<form action='/send' method='POST'>"
-                "<input type='text' name='message' maxlength='31'>"
+                "<input type='text' name='message' maxlength='127'>"
                 "<input type='submit' value='SEND'>"
                 "</form></body></html>";
   server.send(200, "text/html", html);
@@ -72,14 +73,22 @@ void handleForm() {
     String msg = server.arg("message");
     msg.toCharArray(myData.text, 32);
     
-    esp_now_send(macESP2, (uint8_t *) &myData, sizeof(myData));
+    esp_now_send(macESP, (uint8_t *) &myData, sizeof(myData));
     
-    server.send(200, "text/html", "Inviato: " + msg + "<br><a href='/'>Indietro</a>");
+    server.sendHeader("Location", "/");
+    server.send(303);
   }
 }
 
 void setup() {
   Serial.begin(115200);
+  String Macaddress = WiFi.macAddress();
+
+  if (Macaddress[5] == 0x96) {
+    macESP = macESP2;
+  } else {
+    macESP = macESP1;
+  }
 
   // LED matrix
   P.begin();
@@ -102,7 +111,7 @@ void setup() {
   }
 
   esp_now_set_self_role(ESP_NOW_ROLE_CONTROLLER);
-  esp_now_add_peer(macESP2, ESP_NOW_ROLE_SLAVE, 1, NULL, 0);
+  esp_now_add_peer(macESP, ESP_NOW_ROLE_SLAVE, 1, NULL, 0);
   esp_now_register_recv_cb(OnDataRecv);
 
   server.on("/", handleRoot);
