@@ -71,13 +71,23 @@ void handleRoot() {
 void handleForm() {
   if (server.hasArg("message")) {
     String msg = server.arg("message");
-    msg.toCharArray(myData.text, 32);
+    msg.toCharArray(myData.text, 128);
     
     esp_now_send(macESP, (uint8_t *) &myData, sizeof(myData));
     
     server.sendHeader("Location", "/");
     server.send(303);
   }
+}
+
+//Example with curl: curl -X POST http://192.168.1.140/recv --data-binary curl
+void handleRecv() {    
+  String msg = server.arg("plain");
+  msg.toCharArray(myData.text, 128);
+  
+  Serial.println(msg);
+  OnDataRecv(NULL, (uint8_t *) &myData, sizeof(myData));
+  server.send(200);
 }
 
 void setup() {
@@ -116,26 +126,13 @@ void setup() {
 
   server.on("/", handleRoot);
   server.on("/send", HTTP_POST, handleForm);
+  server.on("/recv", HTTP_POST, handleRecv);
   server.begin();
 }
 
 // Print received message for debugging
 void OnDataRecv(uint8_t * mac, uint8_t *incomingData, uint8_t len) {
   memcpy(&myData, incomingData, sizeof(myData));
-  Serial.println();
-  Serial.print("--- Messaggio Ricevuto ---");
-  Serial.print("Da MAC: ");
-  for (int i = 0; i < 6; i++) {
-    Serial.printf("%02X", mac[i]);
-    if (i < 5) Serial.print(":");
-  }
-  Serial.println();
-  Serial.print("Contenuto: ");
-  Serial.println(myData.text);
-  Serial.println("--------------------------");
-
-    memcpy(&myData, incomingData, sizeof(myData));
-  
   
   utf8ToAscii(myData.text);
   strcpy(incomingMsg, myData.text);
