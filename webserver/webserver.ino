@@ -24,7 +24,7 @@ uint8_t* macESP = NULL;
 
 ESP8266WebServer server(80);
 
-char incomingMsg[128] = "Pronto";
+char incomingMsg[128];
 char outgoingMsg[128];
 
 // Struttura dati per l'invio
@@ -58,8 +58,8 @@ void utf8ToAscii(char* s) {
 
 // HTML page
 void handleRoot() {
-  String html = "<html><body>"
-                "<h2>P.I.G. sender</h2>"
+  String html = "<html><head><meta charset='UTF-8'></head><body>"
+                "<h2>P.I.G. sender 🐷</h2>"
                 "<form action='/send' method='POST'>"
                 "<input type='text' name='message' maxlength='127'>"
                 "<input type='submit' value='SEND'>"
@@ -93,7 +93,6 @@ void setup() {
   // LED matrix
   P.begin();
   P.setIntensity(2);
-  P.displayText(incomingMsg, PA_CENTER, 60, 2000, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
 
   // WiFi
   WiFi.mode(WIFI_STA);
@@ -102,7 +101,8 @@ void setup() {
     delay(500);
     Serial.print(".");
   }
-  Serial.println("\nConnesso! IP: " + WiFi.localIP().toString());
+  WiFi.localIP().toString().toCharArray(incomingMsg, 128);
+  P.displayText(incomingMsg, PA_CENTER, 60, 2000, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
 
   // ESP-NOW
   if (esp_now_init() != 0) {
