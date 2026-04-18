@@ -92,9 +92,11 @@ void handleRecv() {
 
 void setup() {
   Serial.begin(115200);
-  String Macaddress = WiFi.macAddress();
 
-  if (Macaddress[5] == 0x96) {
+  uint8_t mac[6];
+  WiFi.macAddress(mac);
+
+  if (mac[5] == 0x96) {
     macESP = macESP2;
   } else {
     macESP = macESP1;
